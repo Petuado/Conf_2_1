@@ -1,5 +1,5 @@
-packageName,my-app
-repositoryUrl,https://github.com/example/repo
+packageName,ripgrep
+repositoryUrl,https://github.com/BurntSushi/ripgrep
 repositoryMode,remote
 outputFileName,dependency-graph.png
 maxDepth,3

@@ -39,6 +39,15 @@
 - Коды возврата процесса для интеграции с внешними скриптами.
 - Запуск без сети и без Gradle wrapper (через локальный `kotlinc`).
 
+### Что реализовано в этапе 2
+
+- Загрузка манифеста `Cargo.toml` напрямую из публичного GitHub-репозитория
+  (без использования `git` CLI и сторонних библиотек).
+- Собственный построчный парсер TOML для извлечения прямых зависимостей
+  из секций `[dependencies]`, `[dev-dependencies]`, `[build-dependencies]`.
+- Вывод списка прямых зависимостей (имя, версия, тип) в консоль.
+
+
 ---
 
 ## Требования
@@ -71,9 +80,14 @@ Conf_2_1/
 │       │   ├── ConfigKey.kt           # перечисление ключей CSV
 │       │   ├── ConfigException.kt     # доменное исключение
 │       │   └── ConfigLoader.kt        # парсинг + валидация
-│       └── cli/
-│           └── ConfigPrinter.kt       # вывод конфигурации
+│       ├── cli/
+│       │   └── ConfigPrinter.kt       # вывод конфигурации
+│       └── data/                      # Логика сбора данных (Этап 2)
+│           ├── Dependency.kt          # модель зависимости
+│           ├── RepositoryFetcher.kt   # загрузка Cargo.toml по URL
+│           └── CargoTomlParser.kt     # парсер TOML без библиотек
 ├── config.csv                         # конфигурация по умолчанию
+├── Cargo.toml                         # тестовый манифест для проверки
 ├── run.sh                             # сборка + запуск через kotlinc
 ├── build.gradle.kts
 ├── settings.gradle.kts
@@ -154,6 +168,11 @@ java -jar build/app.jar config.csv
 | 2   | Неверные аргументы CLI                |
 | 3   | Непредвиденная ошибка                 |
 
+При сборе данных (Этап 2) возможны следующие сообщения:
+
+Could not find Cargo.toml in repository ... — файл отсутствует или репозиторий приватный.
+HTTP 404 for ... — неверный URL или удалённый файл.
+Unsupported URL scheme — поддерживаются только http, https и file.
 ---
 
 ## Пример работы
@@ -168,10 +187,17 @@ $ ./run.sh
 >> Running with config: /Users/petya/Downloads/Conf_2_1/config.csv
 === Configuration ===
 packageName = my-app
-repositoryUrl = https://github.com/example/repo
+repositoryUrl = https://github.com/Petuado/Conf_2_1
 repositoryMode = remote
 outputFileName = dependency-graph.png
 maxDepth = 3
+
+--- Fetching dependencies ---
+Direct dependencies of package 'my-app':
+ - serde (v1.0) [normal]
+ - tokio (v1.28) [normal]
+ - reqwest (v0.11) [normal]
+ - mockito (v0.31) [dev]
 ```
 
 ### Ошибочный конфиг
@@ -209,3 +235,4 @@ $ echo $?
 - `main` — стабильное состояние.
 - Каждый этап фиксируется аннотированным тегом:
     - `stage-1` — минимальный прототип с конфигурацией.
+    - `stage-2` — сбор данных (парсинг Cargo.toml).
