@@ -1,0 +1,5 @@
+packageName,my-app
+repositoryUrl,https://github.com/example/repo
+repositoryMode,remote
+outputFileName,dependency-graph.png
+maxDepth,3
