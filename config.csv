@@ -1,5 +1,5 @@
 packageName,my-app
-repositoryUrl,https://github.com/example/repo
-repositoryMode,remote
+repositoryUrl,file:///Users/petya/Downloads/Conf_2_1/tests/Cargo.toml
+repositoryMode,local
 outputFileName,dependency-graph.png
 maxDepth,3

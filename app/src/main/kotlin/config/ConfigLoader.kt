@@ -4,15 +4,20 @@ import java.io.File
 import java.net.URI
 
 /**
- * Загрузчик и валидатор конфигурации.
- * Чтение CSV-файла построчно (с поддержкой комментариев и пустых строк).
- * Парсинг пар "ключ,значение" с проверкой на дубликаты и отсутствие обязательных полей.
- * Строгая валидация каждого параметра:
- * При любой ошибке выбрасывает [ConfigException] с указанием номера строки или параметра.
+ * Загрузчик и валидатор конфигурации приложения.
  */
-
 object ConfigLoader {
 
+    private const val MAX_ALLOWED_DEPTH = 100
+    private const val MIN_ALLOWED_DEPTH = 1
+
+    /**
+     * Загружает и валидирует конфигурацию из указанного CSV-файла.
+     *
+     * @param path Путь к файлу конфигурации.
+     * @return Валидированный объект конфигурации.
+     * @throws ConfigException Если файл не найден или содержит ошибки.
+     */
     fun load(path: String): AppConfig {
         val file = File(path)
         if (!file.exists()) throw ConfigException("Config file not found: $path")
@@ -24,6 +29,7 @@ object ConfigLoader {
 
     private fun parseCsv(file: File): Map<ConfigKey, String> {
         val result = mutableMapOf<ConfigKey, String>()
+
         file.readLines().forEachIndexed { idx, line ->
             val trimmed = line.trim()
             if (trimmed.isEmpty() || trimmed.startsWith("#")) return@forEachIndexed
@@ -106,9 +112,12 @@ object ConfigLoader {
             throw ConfigException("outputFileName '$value' must not contain path separators")
         }
         val ext = value.substringAfterLast('.', "")
-        if (ext.lowercase() !in setOf("png", "svg", "jpg", "jpeg", "gv", "dot")) {
+        val allowedExts = setOf("png", "svg", "jpg", "jpeg", "gv", "dot")
+
+        if (ext.lowercase() !in allowedExts) {
             throw ConfigException(
-                "outputFileName '$value' must have a supported extension (png, svg, jpg, jpeg, gv, dot)"
+                "outputFileName '$value' must have a supported extension " +
+                        "(png, svg, jpg, jpeg, gv, dot)"
             )
         }
         return value
@@ -117,8 +126,15 @@ object ConfigLoader {
     private fun validateMaxDepth(value: String): Int {
         val n = value.toIntOrNull()
             ?: throw ConfigException("maxDepth '$value' is not an integer")
-        if (n < 1) throw ConfigException("maxDepth '$value' must be >= 1")
-        if (n > 100) throw ConfigException("maxDepth '$value' is unreasonably large (max 100)")
+
+        if (n < MIN_ALLOWED_DEPTH) {
+            throw ConfigException("maxDepth '$value' must be >= $MIN_ALLOWED_DEPTH")
+        }
+        if (n > MAX_ALLOWED_DEPTH) {
+            throw ConfigException(
+                "maxDepth '$value' is unreasonably large (max $MAX_ALLOWED_DEPTH)"
+            )
+        }
         return n
     }
 }
